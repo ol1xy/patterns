@@ -1,7 +1,7 @@
 import json
 import os
 
-from Src.exceptions import operation_exception
+from Src.exceptions import operation_exception, exception_proxy
 from Src.Logics.convert_factory import convert_factory
 from Src.reference import reference
 
@@ -72,9 +72,15 @@ class storage():
         Raises:
             operation_exception: _description_
         """
+        file_path = os.path.split(__file__)
+        data_file = "%s/%s" % (file_path[0], self.__storage_file)
+        if not os.path.exists(data_file):
+            raise operation_exception(f"Невозможно загрузить данные! Не найден файл {data_file}")
+
+
         try:
             factory = convert_factory()
-            with open(self.__storage_file, "w") as write_file:
+            with open(data_file, "w") as write_file:
                 data = factory.serialize( self.data )
                 json_text = json.dumps(data, sort_keys = True, indent = 4, ensure_ascii = False)  
                 write_file.write(json_text)
@@ -85,6 +91,25 @@ class storage():
             
         return False    
 
+ 
+    def save_blocked_turns(self, turns:list):
+        """
+            Сохранить новый список заблокированных оборотов
+        """        
+        exception_proxy.validate(turns, list)
+        if len(turns) > 0:
+            self.__data[ storage.blocked_turns_key() ] = turns
+            # self.save()
+            
+            
+    @staticmethod
+    def blocked_turns_key():
+        """
+            Ключ для хранения заблокированных оборотов
+        Returns:
+            _type_: _description_
+        """
+        return "storage_row_turn_model"    
  
     @staticmethod
     def nomenclature_key():
@@ -150,3 +175,21 @@ class storage():
                 keys.append(method())
         return keys
     
+
+    def Ok( app):
+        """"
+            Сформировать данные для сервера
+        """
+        if app is None:
+            raise operation_exception("Некорректно переданы параметры!")
+
+        json_text = json.dumps({"status" : "ok"}, sort_keys = True, indent = 4,  ensure_ascii = False)  
+
+        # Подготовить ответ    
+        result = app.response_class(
+            response =   f"{json_text}",
+            status = 200,
+            mimetype = "application/json; charset=utf-8"
+        )
+        
+        return result

@@ -1,5 +1,9 @@
 from Src.settings_manager import settings_manager 
+from Src.Logics.start_factory import start_factory
+from Src.Logics.Services.storage_service import storage_service
+from Src.Storage.storage import storage
 import unittest
+from datetime import datetime
 
 
 #
@@ -7,7 +11,41 @@ import unittest
 #
 class settings_test(unittest.TestCase):
     
- 
+    # 
+    # Проверить действие наблюдателя при изменении даты блокировки
+    #
+    def test_check_changed_block_period(self):
+        # Подготовка
+        manager = settings_manager()
+        start = start_factory(manager.settings)
+        start.create()
+        key = storage.storage_transaction_key()
+        transactions_data = start.storage.data[ key ]
+        storage_service(transactions_data)
+        
+        # Действие
+        try:
+            manager.settings.block_period = datetime.strptime("2024-01-01", "%Y-%m-%d")    
+            pass
+        except Exception as ex:
+            print(f"{ex}")
+
+    #
+    # Проверить сохранение настроек
+    #
+    def test_save_settings(self):
+        # Подготовка
+        manager = settings_manager()
+        manager.settings.block_period = datetime.strptime("2021-02-01", "%Y-%m-%d")
+
+        # Действие
+        result = manager.save()
+
+        # Проверки
+        assert result == True
+        options = settings_manager()
+        assert options.settings.block_period == datetime.strptime("2021-02-01", "%Y-%m-%d") 
+    
     
     #
     # Проверить на корректность создания и загрузки файла с настройками
